@@ -21,6 +21,8 @@ func main() {
 		os.Exit(runGenerate(os.Args[2:]))
 	case "verify":
 		os.Exit(runVerify(os.Args[2:]))
+	case "audit":
+		os.Exit(runAudit(os.Args[2:]))
 	case "version":
 		fmt.Println("hashlock 0.1.0")
 		os.Exit(0)
@@ -32,9 +34,10 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: hashlock <generate|verify|version> [options]")
+	fmt.Fprintln(os.Stderr, "usage: hashlock <generate|verify|audit|version> [options]")
 	fmt.Fprintln(os.Stderr, "  hashlock generate [options] ROOT")
 	fmt.Fprintln(os.Stderr, "  hashlock verify [options] ROOT MANIFEST")
+	fmt.Fprintln(os.Stderr, "  hashlock audit MANIFEST")
 }
 
 func splitExcludes(value string) []string {
@@ -158,5 +161,28 @@ func runVerify(args []string) int {
 	}
 
 	fmt.Println("verification passed")
+	return 0
+}
+
+func runAudit(args []string) int {
+	if len(args) != 1 {
+		fmt.Fprintln(os.Stderr, "audit requires exactly one MANIFEST argument")
+		return 2
+	}
+	manifestData, err := os.ReadFile(args[0])
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "hashlock: %v\n", err)
+		return 2
+	}
+	var manifest hashlock.Manifest
+	if err := json.Unmarshal(manifestData, &manifest); err != nil {
+		fmt.Fprintf(os.Stderr, "hashlock: invalid manifest: %v\n", err)
+		return 2
+	}
+	if err := manifest.Validate(); err != nil {
+		fmt.Fprintf(os.Stderr, "hashlock: audit failed: %v\n", err)
+		return 1
+	}
+	fmt.Printf("manifest audit passed: %d files, algorithm %s\n", len(manifest.Files), manifest.Algorithm)
 	return 0
 }
