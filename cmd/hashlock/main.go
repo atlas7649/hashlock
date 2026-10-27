@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -36,8 +37,8 @@ func main() {
 func usage() {
 	fmt.Fprintln(os.Stderr, "usage: hashlock <generate|verify|audit|version> [options]")
 	fmt.Fprintln(os.Stderr, "  hashlock generate [options] ROOT")
-	fmt.Fprintln(os.Stderr, "  hashlock verify [options] ROOT MANIFEST")
-	fmt.Fprintln(os.Stderr, "  hashlock audit MANIFEST")
+	fmt.Fprintln(os.Stderr, "  hashlock verify [options] ROOT MANIFEST|- ")
+	fmt.Fprintln(os.Stderr, "  hashlock audit MANIFEST|- ")
 }
 
 func splitExcludes(value string) []string {
@@ -109,7 +110,7 @@ func runVerify(args []string) int {
 	}
 
 	root := fs.Arg(0)
-	manifestData, err := os.ReadFile(fs.Arg(1))
+	manifestData, err := readManifest(fs.Arg(1))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "hashlock: %v\n", err)
 		return 2
@@ -169,7 +170,7 @@ func runAudit(args []string) int {
 		fmt.Fprintln(os.Stderr, "audit requires exactly one MANIFEST argument")
 		return 2
 	}
-	manifestData, err := os.ReadFile(args[0])
+	manifestData, err := readManifest(args[0])
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "hashlock: %v\n", err)
 		return 2
@@ -185,4 +186,15 @@ func runAudit(args []string) int {
 	}
 	fmt.Printf("manifest audit passed: %d files, algorithm %s\n", len(manifest.Files), manifest.Algorithm)
 	return 0
+}
+
+func readManifest(name string) ([]byte, error) {
+	if name == "-" {
+		data, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			return nil, fmt.Errorf("read standard input: %w", err)
+		}
+		return data, nil
+	}
+	return os.ReadFile(name)
 }

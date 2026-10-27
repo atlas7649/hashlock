@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -104,11 +105,11 @@ func matchAny(patterns []string, candidate string) bool {
 		if pattern == "" {
 			continue
 		}
-		if ok, err := filepath.Match(pattern, candidate); err == nil && ok {
+		if ok, err := path.Match(pattern, candidate); err == nil && ok {
 			return true
 		}
 		if !strings.Contains(pattern, "/") {
-			if ok, err := filepath.Match(pattern, filepath.Base(candidate)); err == nil && ok {
+			if ok, err := path.Match(pattern, filepath.Base(candidate)); err == nil && ok {
 				return true
 			}
 		}

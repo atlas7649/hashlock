@@ -4,8 +4,9 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"path/filepath"
+	"path"
 	"sort"
+	"strings"
 )
 
 // Verify compares root against manifest and returns a detailed report.
@@ -87,9 +88,14 @@ func (m *Manifest) Validate() error {
 		if entry.Path == "" {
 			return errors.New("manifest contains an empty path")
 		}
-		clean := filepath.ToSlash(filepath.Clean(entry.Path))
-		if clean != entry.Path || entry.Path == "." || filepath.IsAbs(entry.Path) {
+		clean := path.Clean(entry.Path)
+		if clean != entry.Path || entry.Path == "." || entry.Path == "/" || path.IsAbs(entry.Path) {
 			return fmt.Errorf("invalid manifest path %q", entry.Path)
+		}
+		for _, part := range strings.Split(entry.Path, "/") {
+			if part == ".." {
+				return fmt.Errorf("invalid manifest path %q", entry.Path)
+			}
 		}
 		if _, ok := seen[entry.Path]; ok {
 			return fmt.Errorf("duplicate manifest path %q", entry.Path)

@@ -9,6 +9,7 @@
 - Verifies a directory against a manifest.
 - Reports missing, modified, and extra files.
 - Supports comma-separated glob exclusion patterns.
+- Audits manifest structure and hashes.
 - Provides both a command-line tool and a Go library.
 
 ## Build
@@ -41,6 +42,18 @@ Print a machine-readable verification report:
 
 ```sh
 hashlock verify --json ./site site.manifest.json
+```
+
+Audit a manifest:
+
+```sh
+hashlock audit site.manifest.json
+```
+
+Manifests may also be read from standard input:
+
+```sh
+hashlock generate ./site | hashlock audit -
 ```
 
 ## Manifest format
@@ -95,7 +108,7 @@ func main() {
 ## Exit codes
 
 - `0`: success, or verification found no problems.
-- `1`: verification found missing, modified, or extra files.
+- `1`: verification found missing, modified, or extra files, or a manifest failed audit.
 - `2`: usage error or runtime error.
 
 ## Development

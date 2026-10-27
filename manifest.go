@@ -1,7 +1,6 @@
 package hashlock
 
 import (
-	"sort"
 	"time"
 )
 
@@ -90,5 +89,3 @@ func Generate(root string, opts GenerateOptions) (Manifest, error) {
 	}
 	return manifest, nil
 }
-
-var _ = sort.Strings
