@@ -27,6 +27,9 @@ func main() {
 	case "version":
 		fmt.Println("hashlock 0.1.0")
 		os.Exit(0)
+	case "help", "-h", "--help":
+		usage()
+		os.Exit(0)
 	default:
 		fmt.Fprintf(os.Stderr, "unknown command %q\n", os.Args[1])
 		usage()
@@ -35,10 +38,12 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: hashlock <generate|verify|audit|version> [options]")
+	fmt.Fprintln(os.Stderr, "usage: hashlock <generate|verify|audit|version|help> [options]")
 	fmt.Fprintln(os.Stderr, "  hashlock generate [options] ROOT")
 	fmt.Fprintln(os.Stderr, "  hashlock verify [options] ROOT MANIFEST|- ")
 	fmt.Fprintln(os.Stderr, "  hashlock audit MANIFEST|- ")
+	fmt.Fprintln(os.Stderr, "  hashlock version")
+	fmt.Fprintln(os.Stderr, "  hashlock help")
 }
 
 func splitExcludes(value string) []string {
