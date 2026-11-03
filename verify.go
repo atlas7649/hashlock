@@ -15,6 +15,12 @@ func Verify(root string, manifest Manifest, opts VerifyOptions) (Verification, e
 		return Verification{}, err
 	}
 
+	if opts.Excludes != nil {
+		if err := validateExcludes(opts.Excludes); err != nil {
+			return Verification{}, err
+		}
+	}
+
 	excludes := opts.Excludes
 	if excludes == nil {
 		excludes = manifest.Excludes
@@ -83,6 +89,16 @@ func (m *Manifest) Validate() error {
 		return fmt.Errorf("unsupported algorithm %q", m.Algorithm)
 	}
 
+	for _, rawPattern := range m.Excludes {
+		pattern := strings.TrimSpace(rawPattern)
+		if pattern == "" {
+			continue
+		}
+		if _, err := path.Match(pattern, ""); err != nil {
+			return fmt.Errorf("invalid exclude pattern %q: %w", rawPattern, err)
+		}
+	}
+
 	seen := make(map[string]struct{}, len(m.Files))
 	for _, entry := range m.Files {
 		if entry.Path == "" {
@@ -110,6 +126,19 @@ func (m *Manifest) Validate() error {
 		}
 		if entry.Size < 0 {
 			return fmt.Errorf("negative size for %q", entry.Path)
+		}
+	}
+	return nil
+}
+
+func validateExcludes(patterns []string) error {
+	for _, rawPattern := range patterns {
+		pattern := strings.TrimSpace(rawPattern)
+		if pattern == "" {
+			continue
+		}
+		if _, err := path.Match(pattern, ""); err != nil {
+			return fmt.Errorf("invalid exclude pattern %q: %w", rawPattern, err)
 		}
 	}
 	return nil

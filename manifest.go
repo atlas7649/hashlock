@@ -62,6 +62,10 @@ func (v Verification) HasProblems() bool {
 
 // Generate walks root and returns a manifest containing every regular file.
 func Generate(root string, opts GenerateOptions) (Manifest, error) {
+	if err := validateExcludes(opts.Excludes); err != nil {
+		return Manifest{}, err
+	}
+
 	entries, err := scan(root, opts.Excludes)
 	if err != nil {
 		return Manifest{}, err

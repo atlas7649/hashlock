@@ -3,6 +3,7 @@ package hashlock
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -84,5 +85,59 @@ func TestVerificationDetectsChanges(t *testing.T) {
 	}
 	if len(report.Extra) != 1 || report.Extra[0] != "extra.txt" {
 		t.Fatalf("unexpected extra files: %v", report.Extra)
+	}
+}
+
+func TestManifestValidationRejectsInvalidExcludePattern(t *testing.T) {
+	manifest := Manifest{
+		Version:   Version,
+		Algorithm: "sha256",
+		CreatedAt: time.Now().UTC(),
+		Files: []FileEntry{
+			{Path: "a.txt", Size: 5, SHA256: strings.Repeat("0", 64)},
+		},
+	}
+
+	manifest.Excludes = []string{"["}
+	if err := manifest.Validate(); err == nil {
+		t.Fatal("expected invalid exclude pattern to be rejected")
+	}
+}
+
+func TestManifestValidationAcceptsValidAndEmptyExcludePatterns(t *testing.T) {
+	manifest := Manifest{
+		Version:   Version,
+		Algorithm: "sha256",
+		CreatedAt: time.Now().UTC(),
+		Files: []FileEntry{
+			{Path: "a.txt", Size: 5, SHA256: strings.Repeat("0", 64)},
+		},
+		Excludes: []string{"*.tmp", "  ", ""},
+	}
+
+	if err := manifest.Validate(); err != nil {
+		t.Fatalf("unexpected validation error: %v", err)
+	}
+}
+
+func TestGenerateRejectsInvalidExcludePattern(t *testing.T) {
+	if _, err := Generate(t.TempDir(), GenerateOptions{Excludes: []string{"["}}); err == nil {
+		t.Fatal("expected Generate to reject an invalid exclude pattern")
+	}
+}
+
+func TestVerifyRejectsInvalidExcludeOverride(t *testing.T) {
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, "a.txt"), []byte("alpha"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	manifest, err := Generate(root, GenerateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := Verify(root, manifest, VerifyOptions{Excludes: []string{"["}}); err == nil {
+		t.Fatal("expected Verify to reject an invalid exclude override")
 	}
 }
