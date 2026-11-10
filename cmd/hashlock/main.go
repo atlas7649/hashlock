@@ -49,6 +49,58 @@ func usage() {
 	fmt.Fprintln(os.Stderr, "  hashlock help")
 }
 
+// reorderArgs moves flags before positional arguments. Go's flag package stops
+// parsing at the first positional argument, but the documented CLI examples
+// allow flags after paths.
+func reorderArgs(fs *flag.FlagSet, args []string) []string {
+	var flags, positionals []string
+	i := 0
+	for i < len(args) {
+		arg := args[i]
+		if arg == "--" {
+			positionals = append(positionals, args[i:]...)
+			break
+		}
+		if arg == "-" || !strings.HasPrefix(arg, "-") {
+			positionals = append(positionals, arg)
+			i++
+			continue
+		}
+
+		name := strings.TrimLeft(arg, "-")
+		if eq := strings.IndexByte(name, '='); eq >= 0 {
+			name = name[:eq]
+		}
+		f := fs.Lookup(name)
+		if f == nil {
+			positionals = append(positionals, arg)
+			i++
+			continue
+		}
+
+		if strings.IndexByte(arg, '=') >= 0 {
+			flags = append(flags, arg)
+			i++
+			continue
+		}
+
+		if boolFlag, ok := f.Value.(interface{ IsBoolFlag() bool }); ok && boolFlag.IsBoolFlag() {
+			flags = append(flags, arg)
+			i++
+			continue
+		}
+
+		if i+1 >= len(args) {
+			flags = append(flags, arg)
+			i++
+			continue
+		}
+		flags = append(flags, arg, args[i+1])
+		i += 2
+	}
+	return append(flags, positionals...)
+}
+
 func splitExcludes(value string) []string {
 	if strings.TrimSpace(value) == "" {
 		return nil
@@ -68,7 +120,7 @@ func runGenerate(args []string) int {
 	fs := flag.NewFlagSet("generate", flag.ContinueOnError)
 	output := fs.String("o", "-", "write manifest to FILE (- for stdout)")
 	exclude := fs.String("exclude", "", "comma-separated glob patterns to exclude")
-	if err := fs.Parse(args); err != nil {
+	if err := fs.Parse(reorderArgs(fs, args)); err != nil {
 		return 2
 	}
 	if fs.NArg() != 1 {
@@ -109,7 +161,7 @@ func runVerify(args []string) int {
 	fs := flag.NewFlagSet("verify", flag.ContinueOnError)
 	exclude := fs.String("exclude", "", "comma-separated glob patterns to exclude")
 	asJSON := fs.Bool("json", false, "print the verification report as JSON")
-	if err := fs.Parse(args); err != nil {
+	if err := fs.Parse(reorderArgs(fs, args)); err != nil {
 		return 2
 	}
 	if fs.NArg() != 2 {
@@ -199,7 +251,7 @@ func runAudit(args []string) int {
 func runDiff(args []string) int {
 	fs := flag.NewFlagSet("diff", flag.ContinueOnError)
 	asJSON := fs.Bool("json", false, "print the diff as JSON")
-	if err := fs.Parse(args); err != nil {
+	if err := fs.Parse(reorderArgs(fs, args)); err != nil {
 		return 2
 	}
 	if fs.NArg() != 2 {
