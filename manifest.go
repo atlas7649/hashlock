@@ -1,6 +1,7 @@
 package hashlock
 
 import (
+	"strings"
 	"time"
 )
 
@@ -97,10 +98,7 @@ func Generate(root string, opts GenerateOptions) (Manifest, error) {
 		now = opts.Now().UTC()
 	}
 
-	excludes := append([]string(nil), opts.Excludes...)
-	if len(excludes) == 0 {
-		excludes = nil
-	}
+	excludes := normalizeExcludes(opts.Excludes)
 
 	manifest := Manifest{
 		Version:   Version,
@@ -113,4 +111,18 @@ func Generate(root string, opts GenerateOptions) (Manifest, error) {
 		manifest.Files = []FileEntry{}
 	}
 	return manifest, nil
+}
+
+func normalizeExcludes(patterns []string) []string {
+	result := make([]string, 0, len(patterns))
+	for _, pattern := range patterns {
+		pattern = strings.TrimSpace(pattern)
+		if pattern != "" {
+			result = append(result, pattern)
+		}
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
 }

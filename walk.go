@@ -14,7 +14,8 @@ import (
 )
 
 func scan(root string, excludes []string) ([]FileEntry, error) {
-	info, err := os.Lstat(root)
+	cleanRoot := filepath.Clean(root)
+	info, err := os.Lstat(cleanRoot)
 	if err != nil {
 		return nil, err
 	}
@@ -23,15 +24,15 @@ func scan(root string, excludes []string) ([]FileEntry, error) {
 	}
 
 	var entries []FileEntry
-	err = filepath.WalkDir(root, func(path string, d fs.DirEntry, walkErr error) error {
+	err = filepath.WalkDir(cleanRoot, func(path string, d fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
-		if path == root {
+		if path == cleanRoot {
 			return nil
 		}
 
-		rel, err := filepath.Rel(root, path)
+		rel, err := filepath.Rel(cleanRoot, path)
 		if err != nil {
 			return err
 		}
