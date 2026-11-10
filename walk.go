@@ -14,7 +14,7 @@ import (
 )
 
 func scan(root string, excludes []string) ([]FileEntry, error) {
-	info, err := os.Stat(root)
+	info, err := os.Lstat(root)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +47,7 @@ func scan(root string, excludes []string) ([]FileEntry, error) {
 			// Symlinks and special files are intentionally not followed.
 			return nil
 		}
-		if matchAny(excludes, slashPath) {
+		if matchFile(excludes, slashPath) {
 			return nil
 		}
 
@@ -106,6 +106,26 @@ func matchAny(patterns []string, candidate string) bool {
 		// an exclusion pattern is only a user-friendly way to denote a directory.
 		pattern = strings.TrimRight(pattern, "/")
 		if pattern == "" {
+			continue
+		}
+		if ok, err := path.Match(pattern, candidate); err == nil && ok {
+			return true
+		}
+		if !strings.Contains(pattern, "/") {
+			if ok, err := path.Match(pattern, filepath.Base(candidate)); err == nil && ok {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// matchFile applies exclusion patterns to regular files. A trailing slash
+// marks a directory-only pattern, so such patterns never exclude files.
+func matchFile(patterns []string, candidate string) bool {
+	for _, rawPattern := range patterns {
+		pattern := strings.TrimSpace(rawPattern)
+		if pattern == "" || strings.HasSuffix(pattern, "/") {
 			continue
 		}
 		if ok, err := path.Match(pattern, candidate); err == nil && ok {
