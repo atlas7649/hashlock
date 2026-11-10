@@ -226,11 +226,15 @@ func runVerify(args []string) int {
 }
 
 func runAudit(args []string) int {
-	if len(args) != 1 {
+	fs := flag.NewFlagSet("audit", flag.ContinueOnError)
+	if err := fs.Parse(reorderArgs(fs, args)); err != nil {
+		return 2
+	}
+	if fs.NArg() != 1 {
 		fmt.Fprintln(os.Stderr, "audit requires exactly one MANIFEST argument")
 		return 2
 	}
-	manifestData, err := readManifest(args[0])
+	manifestData, err := readManifest(fs.Arg(0))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "hashlock: %v\n", err)
 		return 2

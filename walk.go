@@ -102,6 +102,9 @@ func hashFile(path, relativePath string) (FileEntry, error) {
 func matchAny(patterns []string, candidate string) bool {
 	for _, rawPattern := range patterns {
 		pattern := strings.TrimSpace(rawPattern)
+		// Relative manifest paths never end in a slash, so a trailing slash in
+		// an exclusion pattern is only a user-friendly way to denote a directory.
+		pattern = strings.TrimRight(pattern, "/")
 		if pattern == "" {
 			continue
 		}

@@ -196,3 +196,24 @@ func TestManifestDiff(t *testing.T) {
 		t.Fatalf("expected identical manifests to produce no changes: %+v", identical)
 	}
 }
+
+func TestGenerateExcludesTrailingSlashDirectory(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "tmpdir"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "tmpdir", "x.txt"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "keep.txt"), []byte("keep"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	manifest, err := Generate(root, GenerateOptions{Excludes: []string{"tmpdir/"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(manifest.Files) != 1 || manifest.Files[0].Path != "keep.txt" {
+		t.Fatalf("unexpected files: %+v", manifest.Files)
+	}
+}
