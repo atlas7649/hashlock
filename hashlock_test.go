@@ -141,3 +141,58 @@ func TestVerifyRejectsInvalidExcludeOverride(t *testing.T) {
 		t.Fatal("expected Verify to reject an invalid exclude override")
 	}
 }
+
+func TestManifestDiff(t *testing.T) {
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, "a.txt"), []byte("alpha"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "b.txt"), []byte("beta"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	oldManifest, err := Generate(root, GenerateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.WriteFile(filepath.Join(root, "a.txt"), []byte("ALPHA"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(filepath.Join(root, "b.txt")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "c.txt"), []byte("gamma"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	newManifest, err := Generate(root, GenerateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	diff, err := Diff(oldManifest, newManifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !diff.HasChanges() {
+		t.Fatal("expected diff to report changes")
+	}
+	if len(diff.Added) != 1 || diff.Added[0] != "c.txt" {
+		t.Fatalf("unexpected added files: %v", diff.Added)
+	}
+	if len(diff.Removed) != 1 || diff.Removed[0] != "b.txt" {
+		t.Fatalf("unexpected removed files: %v", diff.Removed)
+	}
+	if len(diff.Changed) != 1 || diff.Changed[0].Path != "a.txt" {
+		t.Fatalf("unexpected changed files: %+v", diff.Changed)
+	}
+
+	identical, err := Diff(oldManifest, oldManifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if identical.HasChanges() {
+		t.Fatalf("expected identical manifests to produce no changes: %+v", identical)
+	}
+}

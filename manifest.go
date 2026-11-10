@@ -60,6 +60,27 @@ func (v Verification) HasProblems() bool {
 	return len(v.Missing) > 0 || len(v.Modified) > 0 || len(v.Extra) > 0
 }
 
+// ManifestDiff describes the differences between two manifests.
+type ManifestDiff struct {
+	Added   []string     `json:"added"`
+	Removed []string     `json:"removed"`
+	Changed []FileChange `json:"changed"`
+}
+
+// FileChange describes a file present in both manifests whose size or hash differs.
+type FileChange struct {
+	Path      string `json:"path"`
+	OldSize   int64  `json:"old_size"`
+	NewSize   int64  `json:"new_size"`
+	OldSHA256 string `json:"old_sha256"`
+	NewSHA256 string `json:"new_sha256"`
+}
+
+// HasChanges reports whether the diff contains any difference.
+func (d ManifestDiff) HasChanges() bool {
+	return len(d.Added) > 0 || len(d.Removed) > 0 || len(d.Changed) > 0
+}
+
 // Generate walks root and returns a manifest containing every regular file.
 func Generate(root string, opts GenerateOptions) (Manifest, error) {
 	if err := validateExcludes(opts.Excludes); err != nil {

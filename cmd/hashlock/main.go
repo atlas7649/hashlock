@@ -24,6 +24,8 @@ func main() {
 		os.Exit(runVerify(os.Args[2:]))
 	case "audit":
 		os.Exit(runAudit(os.Args[2:]))
+	case "diff":
+		os.Exit(runDiff(os.Args[2:]))
 	case "version":
 		fmt.Println("hashlock 0.1.0")
 		os.Exit(0)
@@ -38,10 +40,11 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: hashlock <generate|verify|audit|version|help> [options]")
+	fmt.Fprintln(os.Stderr, "usage: hashlock <generate|verify|audit|diff|version|help> [options]")
 	fmt.Fprintln(os.Stderr, "  hashlock generate [options] ROOT")
 	fmt.Fprintln(os.Stderr, "  hashlock verify [options] ROOT MANIFEST|- ")
 	fmt.Fprintln(os.Stderr, "  hashlock audit MANIFEST|- ")
+	fmt.Fprintln(os.Stderr, "  hashlock diff [options] MANIFEST MANIFEST")
 	fmt.Fprintln(os.Stderr, "  hashlock version")
 	fmt.Fprintln(os.Stderr, "  hashlock help")
 }
@@ -191,6 +194,78 @@ func runAudit(args []string) int {
 	}
 	fmt.Printf("manifest audit passed: %d files, algorithm %s\n", len(manifest.Files), manifest.Algorithm)
 	return 0
+}
+
+func runDiff(args []string) int {
+	fs := flag.NewFlagSet("diff", flag.ContinueOnError)
+	asJSON := fs.Bool("json", false, "print the diff as JSON")
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+	if fs.NArg() != 2 {
+		fmt.Fprintln(os.Stderr, "diff requires two MANIFEST arguments")
+		return 2
+	}
+
+	oldData, err := readManifest(fs.Arg(0))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "hashlock: %v\n", err)
+		return 2
+	}
+	newData, err := readManifest(fs.Arg(1))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "hashlock: %v\n", err)
+		return 2
+	}
+
+	var oldManifest hashlock.Manifest
+	if err := json.Unmarshal(oldData, &oldManifest); err != nil {
+		fmt.Fprintf(os.Stderr, "hashlock: invalid manifest: %v\n", err)
+		return 2
+	}
+	var newManifest hashlock.Manifest
+	if err := json.Unmarshal(newData, &newManifest); err != nil {
+		fmt.Fprintf(os.Stderr, "hashlock: invalid manifest: %v\n", err)
+		return 2
+	}
+
+	diff, err := hashlock.Diff(oldManifest, newManifest)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "hashlock: %v\n", err)
+		return 2
+	}
+
+	if *asJSON {
+		data, err := json.MarshalIndent(diff, "", "  ")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "hashlock: %v\n", err)
+			return 2
+		}
+		data = append(data, '\n')
+		if _, err := os.Stdout.Write(data); err != nil {
+			fmt.Fprintf(os.Stderr, "hashlock: %v\n", err)
+			return 2
+		}
+		if diff.HasChanges() {
+			return 1
+		}
+		return 0
+	}
+
+	if !diff.HasChanges() {
+		fmt.Println("manifests are identical")
+		return 0
+	}
+	for _, path := range diff.Added {
+		fmt.Printf("added: %s\n", path)
+	}
+	for _, path := range diff.Removed {
+		fmt.Printf("removed: %s\n", path)
+	}
+	for _, change := range diff.Changed {
+		fmt.Printf("changed: %s\n", change.Path)
+	}
+	return 1
 }
 
 func readManifest(name string) ([]byte, error) {

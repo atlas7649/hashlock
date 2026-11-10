@@ -80,6 +80,61 @@ func Verify(root string, manifest Manifest, opts VerifyOptions) (Verification, e
 	return report, nil
 }
 
+// Diff compares two manifests and reports added, removed, and changed files.
+func Diff(old, new Manifest) (ManifestDiff, error) {
+	if err := old.Validate(); err != nil {
+		return ManifestDiff{}, err
+	}
+	if err := new.Validate(); err != nil {
+		return ManifestDiff{}, err
+	}
+
+	oldMap := make(map[string]FileEntry, len(old.Files))
+	for _, entry := range old.Files {
+		oldMap[entry.Path] = entry
+	}
+	newMap := make(map[string]FileEntry, len(new.Files))
+	for _, entry := range new.Files {
+		newMap[entry.Path] = entry
+	}
+
+	diff := ManifestDiff{
+		Added:   []string{},
+		Removed: []string{},
+		Changed: []FileChange{},
+	}
+
+	for _, entry := range old.Files {
+		if current, ok := newMap[entry.Path]; ok {
+			if current.Size != entry.Size || current.SHA256 != entry.SHA256 {
+				diff.Changed = append(diff.Changed, FileChange{
+					Path:      entry.Path,
+					OldSize:   entry.Size,
+					NewSize:   current.Size,
+					OldSHA256: entry.SHA256,
+					NewSHA256: current.SHA256,
+				})
+			}
+		} else {
+			diff.Removed = append(diff.Removed, entry.Path)
+		}
+	}
+
+	for _, entry := range new.Files {
+		if _, ok := oldMap[entry.Path]; !ok {
+			diff.Added = append(diff.Added, entry.Path)
+		}
+	}
+
+	sort.Strings(diff.Added)
+	sort.Strings(diff.Removed)
+	sort.Slice(diff.Changed, func(i, j int) bool {
+		return diff.Changed[i].Path < diff.Changed[j].Path
+	})
+
+	return diff, nil
+}
+
 // Validate checks that a manifest is internally consistent.
 func (m *Manifest) Validate() error {
 	if m.Version != Version {

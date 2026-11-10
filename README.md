@@ -10,6 +10,7 @@
 - Reports missing, modified, and extra files.
 - Supports comma-separated glob exclusion patterns.
 - Audits manifest structure and hashes.
+- Compares two manifests and reports added, removed, and changed files.
 - Provides both a command-line tool and a Go library.
 
 ## Build
@@ -48,6 +49,18 @@ Audit a manifest:
 
 ```sh
 hashlock audit site.manifest.json
+```
+
+Compare two manifests:
+
+```sh
+hashlock diff old.manifest.json new.manifest.json
+```
+
+Print a machine-readable diff:
+
+```sh
+hashlock diff --json old.manifest.json new.manifest.json
 ```
 
 Manifests may also be read from standard input:
@@ -108,7 +121,7 @@ func main() {
 ## Exit codes
 
 - `0`: success, or verification found no problems.
-- `1`: verification found missing, modified, or extra files, or a manifest failed audit.
+- `1`: verification found missing, modified, or extra files, a manifest failed audit, or a diff found changes.
 - `2`: usage error or runtime error.
 
 ## Development
