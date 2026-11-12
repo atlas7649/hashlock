@@ -106,6 +106,7 @@ func matchAny(patterns []string, candidate string) bool {
 		// Relative manifest paths never end in a slash, so a trailing slash in
 		// an exclusion pattern is only a user-friendly way to denote a directory.
 		pattern = strings.TrimRight(pattern, "/")
+		pattern = strings.TrimSpace(pattern)
 		if pattern == "" {
 			continue
 		}
