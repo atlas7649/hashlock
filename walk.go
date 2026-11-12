@@ -114,7 +114,7 @@ func matchAny(patterns []string, candidate string) bool {
 			return true
 		}
 		if !strings.Contains(pattern, "/") {
-			if ok, err := path.Match(pattern, filepath.Base(candidate)); err == nil && ok {
+			if ok, err := path.Match(pattern, path.Base(candidate)); err == nil && ok {
 				return true
 			}
 		}
@@ -134,7 +134,7 @@ func matchFile(patterns []string, candidate string) bool {
 			return true
 		}
 		if !strings.Contains(pattern, "/") {
-			if ok, err := path.Match(pattern, filepath.Base(candidate)); err == nil && ok {
+			if ok, err := path.Match(pattern, path.Base(candidate)); err == nil && ok {
 				return true
 			}
 		}
