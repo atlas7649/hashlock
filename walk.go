@@ -100,9 +100,26 @@ func hashFile(path, relativePath string) (FileEntry, error) {
 	}, nil
 }
 
+// normalizeExcludePattern trims an exclude pattern and removes whitespace
+// immediately before a trailing directory marker.
+func normalizeExcludePattern(pattern string) string {
+	pattern = strings.TrimSpace(pattern)
+	if pattern == "" {
+		return ""
+	}
+	if strings.HasSuffix(pattern, "/") {
+		base := strings.TrimRight(pattern[:len(pattern)-1], " \t\n\r\v\f")
+		pattern = base + "/"
+	}
+	return pattern
+}
+
 func matchAny(patterns []string, candidate string) bool {
 	for _, rawPattern := range patterns {
-		pattern := strings.TrimSpace(rawPattern)
+		pattern := normalizeExcludePattern(rawPattern)
+		if pattern == "" {
+			continue
+		}
 		// Relative manifest paths never end in a slash, so a trailing slash in
 		// an exclusion pattern is only a user-friendly way to denote a directory.
 		pattern = strings.TrimRight(pattern, "/")
@@ -126,7 +143,7 @@ func matchAny(patterns []string, candidate string) bool {
 // marks a directory-only pattern, so such patterns never exclude files.
 func matchFile(patterns []string, candidate string) bool {
 	for _, rawPattern := range patterns {
-		pattern := strings.TrimSpace(rawPattern)
+		pattern := normalizeExcludePattern(rawPattern)
 		if pattern == "" || strings.HasSuffix(pattern, "/") {
 			continue
 		}

@@ -116,7 +116,7 @@ func Generate(root string, opts GenerateOptions) (Manifest, error) {
 func normalizeExcludes(patterns []string) []string {
 	result := make([]string, 0, len(patterns))
 	for _, pattern := range patterns {
-		pattern = strings.TrimSpace(pattern)
+		pattern = normalizeExcludePattern(pattern)
 		if pattern != "" {
 			result = append(result, pattern)
 		}

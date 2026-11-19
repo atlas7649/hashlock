@@ -145,7 +145,7 @@ func (m *Manifest) Validate() error {
 	}
 
 	for _, rawPattern := range m.Excludes {
-		pattern := strings.TrimSpace(rawPattern)
+		pattern := normalizeExcludePattern(rawPattern)
 		if pattern == "" {
 			continue
 		}
@@ -188,7 +188,7 @@ func (m *Manifest) Validate() error {
 
 func validateExcludes(patterns []string) error {
 	for _, rawPattern := range patterns {
-		pattern := strings.TrimSpace(rawPattern)
+		pattern := normalizeExcludePattern(rawPattern)
 		if pattern == "" {
 			continue
 		}
