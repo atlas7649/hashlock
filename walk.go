@@ -101,15 +101,24 @@ func hashFile(path, relativePath string) (FileEntry, error) {
 	}, nil
 }
 
-// normalizeExcludePattern trims an exclude pattern and removes whitespace
-// immediately before a trailing directory marker.
+// normalizeExcludePattern trims an exclude pattern and canonicalizes a trailing
+// directory marker. Whitespace around or before that marker is removed, and any
+// repeated marker slashes collapse to a single slash.
 func normalizeExcludePattern(pattern string) string {
 	pattern = strings.TrimSpace(pattern)
 	if pattern == "" {
 		return ""
 	}
 	if strings.HasSuffix(pattern, "/") {
-		base := strings.TrimRightFunc(pattern[:len(pattern)-1], unicode.IsSpace)
+		base := pattern
+		for {
+			next := strings.TrimRight(base, "/")
+			next = strings.TrimRightFunc(next, unicode.IsSpace)
+			if next == base {
+				break
+			}
+			base = next
+		}
 		pattern = base + "/"
 	}
 	return pattern
