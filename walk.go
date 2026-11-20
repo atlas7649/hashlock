@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"unicode"
 )
 
 func scan(root string, excludes []string) ([]FileEntry, error) {
@@ -108,7 +109,7 @@ func normalizeExcludePattern(pattern string) string {
 		return ""
 	}
 	if strings.HasSuffix(pattern, "/") {
-		base := strings.TrimRight(pattern[:len(pattern)-1], " \t\n\r\v\f")
+		base := strings.TrimRightFunc(pattern[:len(pattern)-1], unicode.IsSpace)
 		pattern = base + "/"
 	}
 	return pattern
