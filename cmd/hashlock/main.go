@@ -121,6 +121,9 @@ func runGenerate(args []string) int {
 	output := fs.String("o", "-", "write manifest to FILE (- for stdout)")
 	exclude := fs.String("exclude", "", "comma-separated glob patterns to exclude")
 	if err := fs.Parse(reorderArgs(fs, args)); err != nil {
+		if err == flag.ErrHelp {
+			return 0
+		}
 		return 2
 	}
 	if fs.NArg() != 1 {
@@ -162,6 +165,9 @@ func runVerify(args []string) int {
 	exclude := fs.String("exclude", "", "comma-separated glob patterns to exclude")
 	asJSON := fs.Bool("json", false, "print the verification report as JSON")
 	if err := fs.Parse(reorderArgs(fs, args)); err != nil {
+		if err == flag.ErrHelp {
+			return 0
+		}
 		return 2
 	}
 	if fs.NArg() != 2 {
@@ -228,6 +234,9 @@ func runVerify(args []string) int {
 func runAudit(args []string) int {
 	fs := flag.NewFlagSet("audit", flag.ContinueOnError)
 	if err := fs.Parse(reorderArgs(fs, args)); err != nil {
+		if err == flag.ErrHelp {
+			return 0
+		}
 		return 2
 	}
 	if fs.NArg() != 1 {
@@ -256,6 +265,9 @@ func runDiff(args []string) int {
 	fs := flag.NewFlagSet("diff", flag.ContinueOnError)
 	asJSON := fs.Bool("json", false, "print the diff as JSON")
 	if err := fs.Parse(reorderArgs(fs, args)); err != nil {
+		if err == flag.ErrHelp {
+			return 0
+		}
 		return 2
 	}
 	if fs.NArg() != 2 {
