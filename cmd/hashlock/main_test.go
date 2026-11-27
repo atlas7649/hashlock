@@ -1,48 +1,53 @@
 package main
 
 import (
-	"flag"
-	"reflect"
-	"testing"
+    "flag"
+    "reflect"
+    "testing"
 )
 
 func TestReorderArgs(t *testing.T) {
-	tests := []struct {
-		name string
-		args []string
-		want []string
-	}{
-		{
-			name: "flags after positional arguments",
-			args: []string{"./site", "-o", "out.json"},
-			want: []string{"-o", "out.json", "./site"},
-		},
-		{
-			name: "flags before positional arguments",
-			args: []string{"-o", "out.json", "./site"},
-			want: []string{"-o", "out.json", "./site"},
-		},
-		{
-			name: "inline flag value",
-			args: []string{"./site", "-o=out.json"},
-			want: []string{"-o=out.json", "./site"},
-		},
-		{
-			name: "boolean flag after positionals",
-			args: []string{"./site", "manifest.json", "--json"},
-			want: []string{"--json", "./site", "manifest.json"},
-		},
-	}
+    tests := []struct {
+        name string
+        args []string
+        want []string
+    }{
+        {
+            name: "flags after positional arguments",
+            args: []string{"./site", "-o", "out.json"},
+            want: []string{"-o", "out.json", "./site"},
+        },
+        {
+            name: "flags before positional arguments",
+            args: []string{"-o", "out.json", "./site"},
+            want: []string{"-o", "out.json", "./site"},
+        },
+        {
+            name: "inline flag value",
+            args: []string{"./site", "-o=out.json"},
+            want: []string{"-o=out.json", "./site"},
+        },
+        {
+            name: "boolean flag after positionals",
+            args: []string{"./site", "manifest.json", "--json"},
+            want: []string{"--json", "./site", "manifest.json"},
+        },
+        {
+            name: "help flag after positional arguments",
+            args: []string{"./site", "-h"},
+            want: []string{"-h", "./site"},
+        },
+    }
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			fs := flag.NewFlagSet("test", flag.ContinueOnError)
-			fs.String("o", "-", "output")
-			fs.Bool("json", false, "json")
-			got := reorderArgs(fs, tc.args)
-			if !reflect.DeepEqual(got, tc.want) {
-				t.Fatalf("reorderArgs(%v) = %v, want %v", tc.args, got, tc.want)
-			}
-		})
-	}
+    for _, tc := range tests {
+        t.Run(tc.name, func(t *testing.T) {
+            fs := flag.NewFlagSet("test", flag.ContinueOnError)
+            fs.String("o", "-", "output")
+            fs.Bool("json", false, "json")
+            got := reorderArgs(fs, tc.args)
+            if !reflect.DeepEqual(got, tc.want) {
+                t.Fatalf("reorderArgs(%v) = %v, want %v", tc.args, got, tc.want)
+            }
+        })
+    }
 }
